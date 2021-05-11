@@ -497,20 +497,17 @@ static void doom_init(struct term_buf* buf)
 
 static void rainbow_init(struct term_buf* buf)
 {
-	buf->init_width = buf->width; //replace most of  this?
+	buf->init_width = buf->width;
 	buf->init_height = buf->height;
 
-	u16 tmp_len = buf->width * buf->height;
-	buf->tmp_buf = malloc(tmp_len);
-	tmp_len -= buf->width;
+	buf->tmp_buf = malloc(2);
 
 	if (buf->tmp_buf == NULL)
 	{
 		dgn_throw(DGN_ALLOC);
 	}
 
-	memset(buf->tmp_buf, 0, tmp_len);
-	memset(buf->tmp_buf + tmp_len, DOOM_STEPS - 6, buf->width);
+	memset(buf->tmp_buf, 0, 2);
 }
 
 void animate_init(struct term_buf* buf)
