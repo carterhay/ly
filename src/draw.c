@@ -495,12 +495,35 @@ static void doom_init(struct term_buf* buf)
 	memset(buf->tmp_buf + tmp_len, DOOM_STEPS - 1, buf->width);
 }
 
+static void rainbow_init(struct term_buf* buf)
+{
+	buf->init_width = buf->width; //replace most of  this?
+	buf->init_height = buf->height;
+
+	u16 tmp_len = buf->width * buf->height;
+	buf->tmp_buf = malloc(tmp_len);
+	tmp_len -= buf->width;
+
+	if (buf->tmp_buf == NULL)
+	{
+		dgn_throw(DGN_ALLOC);
+	}
+
+	memset(buf->tmp_buf, 0, tmp_len);
+	memset(buf->tmp_buf + tmp_len, DOOM_STEPS - 6, buf->width);
+}
+
 void animate_init(struct term_buf* buf)
 {
 	if (config.animate)
 	{
 		switch(config.animation)
 		{
+			case 1:
+			{
+				rainbow_init(buf);
+				break;
+			}
 			default:
 			{
 				doom_init(buf);
@@ -573,6 +596,70 @@ static void doom(struct term_buf* term_buf)
 	}
 }
 
+static void rainbow(struct term_buf* term_buf)
+{
+	static struct tb_cell stripes[16] = // duplicate colors because cycle pattern goes through 0-15
+	{
+		//{keycode, fg clr, bg clr} 0x2588=solid full block. 0x2592=medium shaded block
+		//{' ', 0, 0}, // default
+		{0x2588, 1, 0}, //black
+		{0x2588, 2, 0}, // red
+		//{0x2592, 2, 4}, // orange
+		{0x2588, 4, 0}, // yellow
+		{0x2588, 3, 0}, // green
+		{0x2588, 7, 0}, //cyan
+		{0x2588, 5, 0}, // blue
+		{0x2588, 6, 0}, // magenta
+		{0x2588, 8, 0}, //white
+		{0x2588, 1, 0}, //black
+		{0x2588, 2, 0}, // red
+		//{0x2592, 2, 4}, // orange
+		{0x2588, 4, 0}, // yellow
+		{0x2588, 3, 0}, // green
+		{0x2588, 7, 0}, //cyan
+		{0x2588, 5, 0}, // blue
+		{0x2588, 6, 0}, // magenta
+		{0x2588, 8, 0} //white
+	};
+
+	u16 w = term_buf->init_width;
+
+	if ((term_buf->width != term_buf->init_width) || (term_buf->height != term_buf->init_height))
+	{
+		return;
+	}
+
+	struct tb_cell* buf = tb_cell_buffer();
+	u8* cycle = term_buf->tmp_buf;
+	u8 color; //has to be u8 because intentional integer overflow causes cycle to loop around. security issue?
+
+	for (u16 x = 0; x < w; ++x)
+	{
+		color = (int)(((double)8/w)*x) + (int)(((double)8/w)*cycle[1]); //flip x,y with horz stripes? //int overflow here
+		for (u16 y = 0; y < term_buf->init_height; ++y)
+		{
+			buf[(y*term_buf->init_width)+x] = stripes[color]; //flip y, width and x for horizontal bars BUG: partial bars when horz
+		}
+	}
+
+	if (cycle[0] < w) //the cycle value causes the stripes to shift position
+	{
+		cycle[0]++; //ticks every update
+		if(cycle[0]%6 == 0)
+		{
+			cycle[1]--; //ticks every nth update to slow down animation speed. %1=full speed %10=1/10th speed
+		}
+	}
+	else //keeps cycle[0] from over flowing and causing undefined behavior
+	{
+		cycle[0] = 0;
+	}
+	if (cycle[1] < 1) //ditto for cycle[1] but reversed so that pattern moves left to right
+	{
+		cycle[1] = w;
+	}
+}
+
 void animate(struct term_buf* buf)
 {
 	buf->width = tb_width();
@@ -582,6 +669,11 @@ void animate(struct term_buf* buf)
 	{
 		switch(config.animation)
 		{
+			case 1:
+			{
+				rainbow(buf);
+				break;
+			}
 			default:
 			{
 				doom(buf);
