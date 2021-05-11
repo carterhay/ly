@@ -635,7 +635,7 @@ static void rainbow(struct term_buf* term_buf)
 
 	for (u16 x = 0; x < w; ++x)
 	{
-		color = (int)(((double)8/w)*x) + (int)(((double)8/w)*cycle[1]); //flip x,y with horz stripes? //int overflow here
+		color = (int) (((double)8/w) * (x + cycle[1])); //flip x,y with horz stripes? //int overflow here
 		for (u16 y = 0; y < term_buf->init_height; ++y)
 		{
 			buf[(y*term_buf->init_width)+x] = stripes[color]; //flip y, width and x for horizontal bars BUG: partial bars when horz
