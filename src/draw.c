@@ -596,7 +596,7 @@ static void doom(struct term_buf* term_buf)
 static void rainbow(struct term_buf* term_buf)
 {
 	static struct tb_cell stripes[16] = // duplicate colors because cycle pattern goes through 0-15
-	{
+	{ //TODO: move this struct to rainbow_init and store in tmp_buf so its not recreated every frame?
 		//{keycode, fg clr, bg clr} 0x2588=solid full block. 0x2592=medium shaded block
 		//{' ', 0, 0}, // default
 		{0x2588, 1, 0}, //black
@@ -620,6 +620,7 @@ static void rainbow(struct term_buf* term_buf)
 	};
 
 	u16 w = term_buf->init_width;
+    u16 h = term_buf->init_height;
 
 	if ((term_buf->width != term_buf->init_width) || (term_buf->height != term_buf->init_height))
 	{
@@ -630,19 +631,19 @@ static void rainbow(struct term_buf* term_buf)
 	u8* cycle = term_buf->tmp_buf;
 	u8 color; //has to be u8 because intentional integer overflow causes cycle to loop around. security issue?
 
-	for (u16 x = 0; x < w; ++x)
+	for (u16 y = 0; y < h; ++y)
 	{
-		color = (int) (((double)8/w) * (x + cycle[1])); //flip x,y with horz stripes? //int overflow here
-		for (u16 y = 0; y < term_buf->init_height; ++y)
+		color = (int) (((double)8/h) * (y + cycle[1])); //flip x,y with horz stripes? //int overflow here
+		for (u16 x = 0; x < w; ++x)
 		{
-			buf[(y*term_buf->init_width)+x] = stripes[color]; //flip y, width and x for horizontal bars BUG: partial bars when horz
+			buf[(y*w)+x] = stripes[color]; //flip y, width and x for horizontal bars BUG: partial bars when horz
 		}
 	}
 
-	if (cycle[0] < w) //the cycle value causes the stripes to shift position
+	if (cycle[0] < h) //the cycle value causes the stripes to shift position
 	{
 		cycle[0]++; //ticks every update
-		if(cycle[0]%6 == 0)
+		if(cycle[0]%15 == 0)
 		{
 			cycle[1]--; //ticks every nth update to slow down animation speed. %1=full speed %10=1/10th speed
 		}
@@ -653,7 +654,7 @@ static void rainbow(struct term_buf* term_buf)
 	}
 	if (cycle[1] < 1) //ditto for cycle[1] but reversed so that pattern moves left to right
 	{
-		cycle[1] = w;
+		cycle[1] = h;
 	}
 }
 
