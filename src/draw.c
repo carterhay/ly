@@ -510,6 +510,21 @@ static void rainbow_init(struct term_buf* buf)
 	memset(buf->tmp_buf, 0, 2);
 }
 
+static void nyan_init(struct term_buf* buf)
+{
+	buf->init_width = buf->width;
+	buf->init_height = buf->height;
+
+	buf->tmp_buf = malloc(2);
+
+	if (buf->tmp_buf == NULL)
+	{
+		dgn_throw(DGN_ALLOC);
+	}
+
+	memset(buf->tmp_buf, 0, 2);
+}
+
 void animate_init(struct term_buf* buf)
 {
 	if (config.animate)
@@ -519,6 +534,11 @@ void animate_init(struct term_buf* buf)
 			case 1:
 			{
 				rainbow_init(buf);
+				break;
+			}
+			case 2:
+			{
+				nyan_init(buf);
 				break;
 			}
 			default:
@@ -633,10 +653,10 @@ static void rainbow(struct term_buf* term_buf)
 
 	for (u16 y = 0; y < h; ++y)
 	{
-		color = (int) (((double)8/h) * (y + cycle[1])); //flip x,y with horz stripes? //int overflow here
+		color = (int) (((double)8/h) * (y + cycle[1])); //flip x,y with vert stripes? //int overflow here
 		for (u16 x = 0; x < w; ++x)
 		{
-			buf[(y*w)+x] = stripes[color]; //flip y, width and x for horizontal bars BUG: partial bars when horz
+			buf[(y*w)+x] = stripes[color]; //flip y, width and x for vertical bars
 		}
 	}
 
@@ -658,6 +678,120 @@ static void rainbow(struct term_buf* term_buf)
 	}
 }
 
+static void nyan(struct term_buf* term_buf)
+{
+	static struct tb_cell colors[10] =
+	{ //TODO: move this struct to nyan_init and store in tmp_buf so its not recreated every frame?
+		//{keycode, fg clr, bg clr} 0x2588=solid full block. 0x2592=medium shaded block
+		//{' ', 0, 0}, // default
+		{0x2588, 1, 0}, //black
+		{0x2588, 2, 0}, // red
+		{0x2592, 2, 4}, // orange
+		{0x2588, 4, 0}, // yellow
+		{0x2588, 3, 0}, // green
+		{0x2588, 5, 0}, // blue
+		{0x2588, 6, 0}, // magenta
+		{0x2588, 8, 0}, //white
+		{0x2592, 8, 0}, //grey
+		{0x2592, 2, 8}, //pink
+	};
+
+	u16 w = term_buf->init_width;
+    u16 h = term_buf->init_height;
+
+	if ((term_buf->width != term_buf->init_width) || (term_buf->height != term_buf->init_height))
+	{
+		return;
+	}
+
+	struct tb_cell* buf = tb_cell_buffer();
+	//u8* cycle = term_buf->tmp_buf;
+
+	//WARNING: for loop disaster area below
+	//stars
+	for (u16 y = 1; y < 8; ++y)
+	{
+		u16 x = w-10;
+		
+		//type:dot
+		buf[(((h/7)*y)*w)+x] = colors[7]; //TODO: x+cycle value for horizontal scrolling
+		
+		//type: hollow plus
+		buf[(((h/7)*y)*w)+x-12] = colors[7]; //horz
+		buf[(((h/7)*y)*w)+x-14] = colors[7];
+		buf[(((h/7)*y)*w)+x-13+w] = colors[7]; //vert
+		buf[(((h/7)*y)*w)+x-13-w] = colors[7];
+		
+		//type:octogon
+		buf[(((h/7)*y)*w)+x-21] = colors[7]; //horz
+		buf[(((h/7)*y)*w)+x-25] = colors[7];
+		buf[(((h/7)*y)*w)+x-23+(2*w)] = colors[7]; //vert
+		buf[(((h/7)*y)*w)+x-23-(2*w)] = colors[7];
+		buf[(((h/7)*y)*w)+x-22+w] = colors[7]; //diag
+		buf[(((h/7)*y)*w)+x-22-w] = colors[7];
+		buf[(((h/7)*y)*w)+x-24+w] = colors[7];
+		buf[(((h/7)*y)*w)+x-24-w] = colors[7];
+	}
+
+	//rainbow
+	for (u16 x = 0; x < 4*w/8; ++x)
+	{
+		for (u16 y = 20*h/32; y < 21*h/32; ++y)
+		{
+			buf[(y*w)+x+(w*0)] = colors[1];
+			buf[(y*w)+x+(w*2)] = colors[2];
+			buf[(y*w)+x+(w*4)] = colors[3];
+			buf[(y*w)+x+(w*6)] = colors[4];
+			buf[(y*w)+x+(w*8)] = colors[5];
+			buf[(y*w)+x+(w*10)] = colors[6];
+		}
+	}
+
+	//cat
+	for (u16 x = 8*w/16; x < 11*w/16; ++x) //body
+	{
+		for (u16 y = 10*h/16; y < 14*h/16; ++y)
+		{
+			//buf[((w*h)/2)+x] = colors[2];
+			buf[(y*w)+x] = colors[9]; //TODO: y+cycle value for up down movement. cycle%3 or 5 ?
+		}
+	}
+	for (u16 x = 20*w/32; x < 23*w/32; ++x) //head
+	{
+		for (u16 y = 23*h/32; y < 28*h/32; ++y)
+		{
+			buf[(y*w)+x] = colors[8];
+		}
+	}
+	for (u16 x = 16*w/32; x < 17*w/32; ++x) //feet
+	{
+		for (u16 y = 28*h/32; y < 29*h/32; ++y)
+		{
+			buf[(y*w)+x+(0*w/64)] = colors[8];
+			buf[(y*w)+x+(3*w/64)] = colors[8];
+			buf[(y*w)+x+(7*w/64)] = colors[8];
+			buf[(y*w)+x+(5*w/32)] = colors[8];
+		}
+	}
+/*
+	if (cycle[0] < h) //the cycle value causes the stripes to shift position
+	{
+		cycle[0]++; //ticks every update
+		if(cycle[0]%15 == 0)
+		{
+			cycle[1]--; //ticks every nth update to slow down animation speed. %1=full speed %10=1/10th speed
+		}
+	}
+	else //keeps cycle[0] from over flowing and causing undefined behavior
+	{
+		cycle[0] = 0;
+	}
+	if (cycle[1] < 1) //ditto for cycle[1] but reversed so that pattern moves left to right
+	{
+		cycle[1] = h;
+	}*/
+}
+
 void animate(struct term_buf* buf)
 {
 	buf->width = tb_width();
@@ -670,6 +804,11 @@ void animate(struct term_buf* buf)
 			case 1:
 			{
 				rainbow(buf);
+				break;
+			}
+			case 2:
+			{
+				nyan(buf);
 				break;
 			}
 			default:
