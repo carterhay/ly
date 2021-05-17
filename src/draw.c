@@ -522,7 +522,7 @@ static void nyan_init(struct term_buf* buf)
 		dgn_throw(DGN_ALLOC);
 	}
 
-	memset(buf->tmp_buf, 0, 2);
+	memset(buf->tmp_buf, 0, 3);
 }
 
 void animate_init(struct term_buf* buf)
@@ -705,13 +705,13 @@ static void nyan(struct term_buf* term_buf)
 	}
 
 	struct tb_cell* buf = tb_cell_buffer();
-	//u8* cycle = term_buf->tmp_buf;
+	u8* cycle = term_buf->tmp_buf;
 
 	//WARNING: for loop disaster area below
 	//stars
-	for (u16 y = 1; y < 8; ++y)
+	/*for (u16 y = 1; y < 8; ++y)
 	{
-		u16 x = w-10;
+		u16 x = w-10+cycle[1];
 		
 		//type:dot
 		buf[(((h/7)*y)*w)+x] = colors[7]; //TODO: x+cycle value for horizontal scrolling
@@ -731,19 +731,19 @@ static void nyan(struct term_buf* term_buf)
 		buf[(((h/7)*y)*w)+x-22-w] = colors[7];
 		buf[(((h/7)*y)*w)+x-24+w] = colors[7];
 		buf[(((h/7)*y)*w)+x-24-w] = colors[7];
-	}
+	}*/
 
-	//rainbow
+	//rainbow TODO: segments?
 	for (u16 x = 0; x < 4*w/8; ++x)
 	{
-		for (u16 y = 20*h/32; y < 21*h/32; ++y)
+		for (u16 y = 40*h/64; y < 43*h/64; ++y)
 		{
-			buf[(y*w)+x+(w*0)] = colors[1];
-			buf[(y*w)+x+(w*2)] = colors[2];
-			buf[(y*w)+x+(w*4)] = colors[3];
-			buf[(y*w)+x+(w*6)] = colors[4];
-			buf[(y*w)+x+(w*8)] = colors[5];
-			buf[(y*w)+x+(w*10)] = colors[6];
+			buf[((y+cycle[1])*w)+x+(w*0)] = colors[1];
+			buf[((y+cycle[1])*w)+x+(w*3)] = colors[2];
+			buf[((y+cycle[1])*w)+x+(w*6)] = colors[3];
+			buf[((y+cycle[1])*w)+x+(w*9)] = colors[4];
+			buf[((y+cycle[1])*w)+x+(w*12)] = colors[5];
+			buf[((y+cycle[1])*w)+x+(w*15)] = colors[6];
 		}
 	}
 
@@ -753,43 +753,69 @@ static void nyan(struct term_buf* term_buf)
 		for (u16 y = 10*h/16; y < 14*h/16; ++y)
 		{
 			//buf[((w*h)/2)+x] = colors[2];
-			buf[(y*w)+x] = colors[9]; //TODO: y+cycle value for up down movement. cycle%3 or 5 ?
+			buf[((y+cycle[1])*w)+x] = colors[9];
 		}
 	}
 	for (u16 x = 20*w/32; x < 23*w/32; ++x) //head
 	{
 		for (u16 y = 23*h/32; y < 28*h/32; ++y)
 		{
-			buf[(y*w)+x] = colors[8];
+			buf[((y+cycle[1])*w)+x] = colors[8];
+		}
+	}
+	for (u16 x = 20*w/32; x < 21*w/32; ++x) //ears
+	{
+		for (u16 y = 22*h/32; y < 23*h/32; ++y)
+		{
+			buf[((y+cycle[1])*w)+x] = colors[8];
+			buf[((y+cycle[1])*w)+x+(4*w/64)] = colors[8];
+		}
+	}
+	for (u16 x = 20*w/32; x < 21*w/32; ++x) //eyes
+	{
+		for (u16 y = 25*h/32; y < 26*h/32; ++y)
+		{
+			buf[((y+cycle[1])*w)+x] = colors[0];
+			buf[((y+cycle[1])*w)+x+(4*w/64)] = colors[0];
 		}
 	}
 	for (u16 x = 16*w/32; x < 17*w/32; ++x) //feet
 	{
 		for (u16 y = 28*h/32; y < 29*h/32; ++y)
 		{
-			buf[(y*w)+x+(0*w/64)] = colors[8];
-			buf[(y*w)+x+(3*w/64)] = colors[8];
-			buf[(y*w)+x+(7*w/64)] = colors[8];
-			buf[(y*w)+x+(5*w/32)] = colors[8];
+			buf[((y+cycle[1])*w)+x+(0*w/64)] = colors[8]; //left to right
+			buf[((y+cycle[1])*w)+x+(3*w/64)] = colors[8];
+			buf[((y+cycle[1])*w)+x+(7*w/64)] = colors[8];
+			buf[((y+cycle[1])*w)+x+(5*w/32)] = colors[8];
 		}
 	}
-/*
-	if (cycle[0] < h) //the cycle value causes the stripes to shift position
+
+	//cycle[0] is 0||1 for up or down
+	//cycle[1] controls amount to shift value by
+	//cycle[2] is a speed reducer
+	//change value of cycle[1] like triangle wave
+	if (cycle[3]%100 == 0)
 	{
-		cycle[0]++; //ticks every update
-		if(cycle[0]%15 == 0)
+		if (cycle[0] == 0)
 		{
-			cycle[1]--; //ticks every nth update to slow down animation speed. %1=full speed %10=1/10th speed
+			cycle[1]++;
+		}
+		else if (cycle[0] == 1)
+		{
+			cycle[1]--;
+		}
+
+		//flip cycle direction alternating up down
+		if (cycle[1] >= 5)
+		{
+			cycle[0] = 1;
+		}
+		else if (cycle[1] <= 1)
+		{
+			cycle[0] = 0;
 		}
 	}
-	else //keeps cycle[0] from over flowing and causing undefined behavior
-	{
-		cycle[0] = 0;
-	}
-	if (cycle[1] < 1) //ditto for cycle[1] but reversed so that pattern moves left to right
-	{
-		cycle[1] = h;
-	}*/
+	cycle[3]++;
 }
 
 void animate(struct term_buf* buf)
