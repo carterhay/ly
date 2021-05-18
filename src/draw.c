@@ -733,17 +733,18 @@ static void nyan(struct term_buf* term_buf)
 		buf[(((h/7)*y)*w)+x-24-w] = colors[7];
 	}*/
 
+	u16 m = tb_height()/20; //adjust y pos of each stripe based on screen height
 	//rainbow TODO: segments?
-	for (u16 x = 0; x < 4*w/8; ++x)
+	for (u16 x = 0; x < 4*w/8; ++x) //TODO: dont go all the way across. smaller sections with +3 y alternating. mem of prev pos?
 	{
 		for (u16 y = 40*h/64; y < 43*h/64; ++y)
 		{
-			buf[((y+cycle[1])*w)+x+(w*0)] = colors[1];
-			buf[((y+cycle[1])*w)+x+(w*3)] = colors[2];
-			buf[((y+cycle[1])*w)+x+(w*6)] = colors[3];
-			buf[((y+cycle[1])*w)+x+(w*9)] = colors[4];
-			buf[((y+cycle[1])*w)+x+(w*12)] = colors[5];
-			buf[((y+cycle[1])*w)+x+(w*15)] = colors[6];
+			buf[((y+(m*0)+cycle[1])*w)+x] = colors[1];
+			buf[((y+(m*1)+cycle[1])*w)+x] = colors[2];
+			buf[((y+(m*2)+cycle[1])*w)+x] = colors[3];
+			buf[((y+(m*3)+cycle[1])*w)+x] = colors[4];
+			buf[((y+(m*4)+cycle[1])*w)+x] = colors[5];
+			buf[((y+(m*5)+cycle[1])*w)+x] = colors[6];
 		}
 	}
 
