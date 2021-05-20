@@ -522,7 +522,7 @@ static void nyan_init(struct term_buf* buf)
 		dgn_throw(DGN_ALLOC);
 	}
 
-	memset(buf->tmp_buf, 0, 3);
+	memset(buf->tmp_buf, 0, 2);
 }
 
 void animate_init(struct term_buf* buf)
@@ -678,6 +678,36 @@ static void rainbow(struct term_buf* term_buf)
 	}
 }
 
+//draw different types of star sprites at specified location on screen
+static void nyan_star_helper(u8 sprite, u16 w, u16 h, u16 x, u16 y, struct tb_cell* colors, struct tb_cell* buf)
+{
+	if (sprite == 0)
+	{
+		//type:dot
+		buf[(((h/7)*y)*w)+x] = colors[7];
+	}
+	else if (sprite == 1)
+	{
+		//type: hollow plus
+		buf[(((h/7)*y)*w)+x-1] = colors[7]; //horz
+		buf[(((h/7)*y)*w)+x+1] = colors[7];
+		buf[(((h/7)*y)*w)+x+w] = colors[7]; //vert
+		buf[(((h/7)*y)*w)+x-w] = colors[7];
+	}
+	else if (sprite == 2)
+	{
+		//type:octogon
+		buf[(((h/7)*y)*w)+x-2] = colors[7]; //horz
+		buf[(((h/7)*y)*w)+x+2] = colors[7];
+		buf[(((h/7)*y)*w)+x+(2*w)] = colors[7]; //vert
+		buf[(((h/7)*y)*w)+x-(2*w)] = colors[7];
+		buf[(((h/7)*y)*w)+x+1+w] = colors[7]; //diag
+		buf[(((h/7)*y)*w)+x-1-w] = colors[7];
+		buf[(((h/7)*y)*w)+x-1+w] = colors[7];
+		buf[(((h/7)*y)*w)+x+1-w] = colors[7];
+	}
+}
+
 static void nyan(struct term_buf* term_buf)
 {
 	static struct tb_cell colors[10] =
@@ -687,7 +717,7 @@ static void nyan(struct term_buf* term_buf)
 		{0x2588, 1, 0}, //black
 		{0x2588, 2, 0}, // red
 		{0x2592, 2, 4}, // orange
-		{0x2588, 4, 0}, // yellow
+		{0x2592, 4, 8}, // yellow
 		{0x2588, 3, 0}, // green
 		{0x2588, 5, 0}, // blue
 		{0x2588, 6, 0}, // magenta
@@ -708,33 +738,17 @@ static void nyan(struct term_buf* term_buf)
 	u8* cycle = term_buf->tmp_buf;
 
 	//WARNING: for loop disaster area below
-	//stars
-	/*for (u16 y = 1; y < 8; ++y)
-	{
-		u16 x = w-10+cycle[1];
-		
-		//type:dot
-		buf[(((h/7)*y)*w)+x] = colors[7]; //TODO: x+cycle value for horizontal scrolling
-		
-		//type: hollow plus
-		buf[(((h/7)*y)*w)+x-12] = colors[7]; //horz
-		buf[(((h/7)*y)*w)+x-14] = colors[7];
-		buf[(((h/7)*y)*w)+x-13+w] = colors[7]; //vert
-		buf[(((h/7)*y)*w)+x-13-w] = colors[7];
-		
-		//type:octogon
-		buf[(((h/7)*y)*w)+x-21] = colors[7]; //horz
-		buf[(((h/7)*y)*w)+x-25] = colors[7];
-		buf[(((h/7)*y)*w)+x-23+(2*w)] = colors[7]; //vert
-		buf[(((h/7)*y)*w)+x-23-(2*w)] = colors[7];
-		buf[(((h/7)*y)*w)+x-22+w] = colors[7]; //diag
-		buf[(((h/7)*y)*w)+x-22-w] = colors[7];
-		buf[(((h/7)*y)*w)+x-24+w] = colors[7];
-		buf[(((h/7)*y)*w)+x-24-w] = colors[7];
-	}*/
 
+	//stars
+	for (u16 y = 1; y < 8; ++y) //7 stars
+	{
+		u16 x = w-cycle[3]+(w/3)*(9%y); //star x pos
+
+		nyan_star_helper(cycle[3]%3, w, h, x, y, colors, buf);
+	}
+
+	//rainbow
 	u16 m = tb_height()/20; //adjust y pos of each stripe based on screen height
-	//rainbow TODO: segments?
 	for (u16 x = 0; x < 4*w/8; ++x) //TODO: dont go all the way across. smaller sections with +3 y alternating. mem of prev pos?
 	{
 		for (u16 y = 40*h/64; y < 43*h/64; ++y)
@@ -753,7 +767,6 @@ static void nyan(struct term_buf* term_buf)
 	{
 		for (u16 y = 10*h/16; y < 14*h/16; ++y)
 		{
-			//buf[((w*h)/2)+x] = colors[2];
 			buf[((y+cycle[1])*w)+x] = colors[9];
 		}
 	}
@@ -780,6 +793,22 @@ static void nyan(struct term_buf* term_buf)
 			buf[((y+cycle[1])*w)+x+(4*w/64)] = colors[0];
 		}
 	}
+	/*for (u16 x = 40*w/64; x < 41*w/64; ++x) //mouth WARNING: looks creepy
+	{
+		for (u16 y = 53*h/64; y < 55*h/64; ++y)
+		{
+			buf[((y+cycle[1])*w)+x] = colors[0];
+			buf[((y+cycle[1])*w)+x+(3*w/64)] = colors[0];
+			buf[((y+cycle[1])*w)+x+(5*w/64)] = colors[0];
+		}
+	}
+	for (u16 x = 40*w/64; x < 45*w/64; ++x) //also mouth
+	{
+		for (u16 y = 54*h/64; y < 55*h/64; ++y)
+		{
+			buf[((y+cycle[1])*w)+x] = colors[0];
+		}
+	}*/
 	for (u16 x = 16*w/32; x < 17*w/32; ++x) //feet
 	{
 		for (u16 y = 28*h/32; y < 29*h/32; ++y)
@@ -791,11 +820,13 @@ static void nyan(struct term_buf* term_buf)
 		}
 	}
 
-	//cycle[0] is 0||1 for up or down
-	//cycle[1] controls amount to shift value by
-	//cycle[2] is a speed reducer
+	/*cycle[0] is 0||1 for cat up or down
+	* cycle[1] controls amount to shift cat y value by
+	* cycle[2] is an animation speed reducer
+	* cycle[3] controls star x pos
+	*/
 	//change value of cycle[1] like triangle wave
-	if (cycle[3]%100 == 0)
+	if (cycle[2]%100 == 0)
 	{
 		if (cycle[0] == 0)
 		{
@@ -816,7 +847,16 @@ static void nyan(struct term_buf* term_buf)
 			cycle[0] = 0;
 		}
 	}
-	cycle[3]++;
+	//star scrolling speed
+	if (cycle[2]%20 == 0)
+	{
+		cycle[3]++;
+		if (cycle[3] > w)
+		{
+			cycle[3] = 0; // reset to stop stars going off bottom of screen
+		}
+	}
+	cycle[2]++;
 }
 
 void animate(struct term_buf* buf)
