@@ -639,8 +639,8 @@ static void rainbow(struct term_buf* term_buf)
 		{0x2588, 8, 0} //white
 	};
 
-	u16 w = term_buf->init_width;
-    u16 h = term_buf->init_height;
+	uint16_t w = term_buf->init_width;
+    uint16_t h = term_buf->init_height;
 
 	if ((term_buf->width != term_buf->init_width) || (term_buf->height != term_buf->init_height))
 	{
@@ -648,13 +648,13 @@ static void rainbow(struct term_buf* term_buf)
 	}
 
 	struct tb_cell* buf = tb_cell_buffer();
-	u8* cycle = term_buf->tmp_buf;
-	u8 color; //has to be u8 because intentional integer overflow causes cycle to loop around. security issue?
+	uint8_t* cycle = term_buf->tmp_buf;
+	uint8_t color; //has to be u8 because intentional integer overflow causes cycle to loop around. security issue?
 
-	for (u16 y = 0; y < h; ++y)
+	for (uint16_t y = 0; y < h; ++y)
 	{
 		color = (int) (((double)8/h) * (y + cycle[1])); //flip x,y with vert stripes? //int overflow here
-		for (u16 x = 0; x < w; ++x)
+		for (uint16_t x = 0; x < w; ++x)
 		{
 			buf[(y*w)+x] = stripes[color]; //flip y, width and x for vertical bars
 		}
@@ -679,7 +679,7 @@ static void rainbow(struct term_buf* term_buf)
 }
 
 //draw different types of star sprites at specified location on screen
-static void nyan_star_helper(u8 sprite, u16 w, u16 h, u16 x, u16 y, struct tb_cell* colors, struct tb_cell* buf)
+static void nyan_star_helper(uint8_t sprite, uint16_t w, uint16_t h, uint16_t x, uint16_t y, struct tb_cell* colors, struct tb_cell* buf)
 {
 	if (sprite == 0)
 	{
@@ -726,8 +726,8 @@ static void nyan(struct term_buf* term_buf)
 		{0x2592, 2, 8}, //pink
 	};
 
-	u16 w = term_buf->init_width;
-    u16 h = term_buf->init_height;
+	uint16_t w = term_buf->init_width;
+    uint16_t h = term_buf->init_height;
 
 	if ((term_buf->width != term_buf->init_width) || (term_buf->height != term_buf->init_height))
 	{
@@ -735,23 +735,23 @@ static void nyan(struct term_buf* term_buf)
 	}
 
 	struct tb_cell* buf = tb_cell_buffer();
-	u8* cycle = term_buf->tmp_buf;
+	uint8_t* cycle = term_buf->tmp_buf;
 
 	//WARNING: for loop disaster area below
 
 	//stars
-	for (u16 y = 1; y < 8; ++y) //7 stars
+	for (uint16_t y = 1; y < 8; ++y) //7 stars
 	{
-		u16 x = w-cycle[3]+(w/3)*(9%y); //star x pos
+		uint16_t x = w-cycle[3]+(w/3)*(9%y); //star x pos
 
 		nyan_star_helper(cycle[3]%3, w, h, x, y, colors, buf);
 	}
 
 	//rainbow
-	u16 m = tb_height()/20; //adjust y pos of each stripe based on screen height
-	for (u16 x = 0; x < 4*w/8; ++x) //TODO: dont go all the way across. smaller sections with +3 y alternating. mem of prev pos?
+	uint16_t m = tb_height()/20; //adjust y pos of each stripe based on screen height
+	for (uint16_t x = 0; x < 4*w/8; ++x) //TODO: dont go all the way across. smaller sections with +3 y alternating. mem of prev pos?
 	{
-		for (u16 y = 40*h/64; y < 43*h/64; ++y)
+		for (uint16_t y = 40*h/64; y < 43*h/64; ++y)
 		{
 			buf[((y+(m*0)+cycle[1])*w)+x] = colors[1];
 			buf[((y+(m*1)+cycle[1])*w)+x] = colors[2];
@@ -763,55 +763,39 @@ static void nyan(struct term_buf* term_buf)
 	}
 
 	//cat
-	for (u16 x = 8*w/16; x < 11*w/16; ++x) //body
+	for (uint16_t x = 8*w/16; x < 11*w/16; ++x) //body
 	{
-		for (u16 y = 10*h/16; y < 14*h/16; ++y)
+		for (uint16_t y = 10*h/16; y < 14*h/16; ++y)
 		{
 			buf[((y+cycle[1])*w)+x] = colors[9];
 		}
 	}
-	for (u16 x = 20*w/32; x < 23*w/32; ++x) //head
+	for (uint16_t x = 20*w/32; x < 23*w/32; ++x) //head
 	{
-		for (u16 y = 23*h/32; y < 28*h/32; ++y)
+		for (uint16_t y = 23*h/32; y < 28*h/32; ++y)
 		{
 			buf[((y+cycle[1])*w)+x] = colors[8];
 		}
 	}
-	for (u16 x = 20*w/32; x < 21*w/32; ++x) //ears
+	for (uint16_t x = 20*w/32; x < 21*w/32; ++x) //ears
 	{
-		for (u16 y = 22*h/32; y < 23*h/32; ++y)
+		for (uint16_t y = 22*h/32; y < 23*h/32; ++y)
 		{
 			buf[((y+cycle[1])*w)+x] = colors[8];
 			buf[((y+cycle[1])*w)+x+(4*w/64)] = colors[8];
 		}
 	}
-	for (u16 x = 20*w/32; x < 21*w/32; ++x) //eyes
+	for (uint16_t x = 20*w/32; x < 21*w/32; ++x) //eyes
 	{
-		for (u16 y = 25*h/32; y < 26*h/32; ++y)
+		for (uint16_t y = 25*h/32; y < 26*h/32; ++y)
 		{
 			buf[((y+cycle[1])*w)+x] = colors[0];
 			buf[((y+cycle[1])*w)+x+(4*w/64)] = colors[0];
 		}
 	}
-	/*for (u16 x = 40*w/64; x < 41*w/64; ++x) //mouth WARNING: looks creepy
+	for (uint16_t x = 16*w/32; x < 17*w/32; ++x) //feet
 	{
-		for (u16 y = 53*h/64; y < 55*h/64; ++y)
-		{
-			buf[((y+cycle[1])*w)+x] = colors[0];
-			buf[((y+cycle[1])*w)+x+(3*w/64)] = colors[0];
-			buf[((y+cycle[1])*w)+x+(5*w/64)] = colors[0];
-		}
-	}
-	for (u16 x = 40*w/64; x < 45*w/64; ++x) //also mouth
-	{
-		for (u16 y = 54*h/64; y < 55*h/64; ++y)
-		{
-			buf[((y+cycle[1])*w)+x] = colors[0];
-		}
-	}*/
-	for (u16 x = 16*w/32; x < 17*w/32; ++x) //feet
-	{
-		for (u16 y = 28*h/32; y < 29*h/32; ++y)
+		for (uint16_t y = 28*h/32; y < 29*h/32; ++y)
 		{
 			buf[((y+cycle[1])*w)+x+(0*w/64)] = colors[8]; //left to right
 			buf[((y+cycle[1])*w)+x+(3*w/64)] = colors[8];
